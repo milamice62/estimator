@@ -6,17 +6,21 @@ import (
 	"strings"
 )
 
-func CalculatePrice(unitPrice string, quantity string) float64 {
-	up, err := strconv.ParseFloat(strings.TrimSpace(unitPrice), 64)
+func CalculatePrice(price string, square string) (float64, float64) {
+	const smtosf = 1.0764e-05
+
+	p, err := strconv.ParseFloat(strings.TrimSpace(price), 64)
 	if err != nil {
 		fmt.Printf("Not invalid number: %v", err)
 	}
 
-	qa, err := strconv.Atoi(strings.TrimSpace(quantity))
+	sqmm, err := strconv.ParseFloat(strings.TrimSpace(square), 64)
 	if err != nil {
 		fmt.Printf("Not invalid number: %v", err)
 	}
 
-	price := up * float64(qa)
-	return price
+	sqft := smtosf * sqmm
+	pricesqft := sqft * p
+
+	return sqft, pricesqft
 }

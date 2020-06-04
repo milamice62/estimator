@@ -8,14 +8,16 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
 	"github.com/milamice62/estimator/calculator"
+	"github.com/milamice62/estimator/handler"
 )
 
-var (
-	unitPrice *widget.Entry
-	quantity  *widget.Entry
-)
+type File struct {
+	Name string
+}
 
 func NewGUI() fyne.Window {
+	currentFile := &File{}
+
 	//New App and Icon
 	app := app.New()
 
@@ -23,8 +25,9 @@ func NewGUI() fyne.Window {
 	w := app.NewWindow("Demo")
 
 	//Form fields
-	unitPrice = widget.NewEntry()
-	quantity = widget.NewEntry()
+	unitPrice := widget.NewEntry()
+	square := widget.NewEntry()
+	name := widget.NewEntry()
 
 	grid := fyne.NewContainerWithLayout(layout.NewGridLayout(2))
 	group1 := widget.NewGroup("ProductsInfo")
@@ -34,19 +37,35 @@ func NewGUI() fyne.Window {
 
 	canvasObjets := []fyne.CanvasObject{
 		widget.NewForm(
-			widget.NewFormItem("Unit Price ", unitPrice),
-			widget.NewFormItem("Quantity: ", quantity),
+			widget.NewFormItem("Name: ", name),
+			widget.NewFormItem("Price/sq.ft: ", unitPrice),
+			widget.NewFormItem("Square(mm): ", square),
 		),
 		widget.NewButton("Calculate", func() {
-			price := calculator.CalculatePrice(unitPrice.Text, quantity.Text)
+			square, price := calculator.CalculatePrice(unitPrice.Text, square.Text)
+			handler.SaveToFile(currentFile.Name, name.Text, square, price)
 			group2.Append(
 				widget.NewForm(
 					widget.NewFormItem(
+						"Name",
+						widget.NewLabel(fmt.Sprintf("%v", name.Text)),
+					),
+					widget.NewFormItem(
+						"SqureFeet",
+						widget.NewLabel(fmt.Sprintf("%.2f", square)),
+					),
+					widget.NewFormItem(
 						"TotalPrice",
-						widget.NewLabel(fmt.Sprintf("%f", price)),
+						widget.NewLabel(fmt.Sprintf("%.2f", price)),
 					),
 				),
 			)
+		}),
+		widget.NewButton("CreateNewFile", func() {
+			handler.CreateNewFile()
+		}),
+		widget.NewButton("SelectFile", func() {
+			currentFile.Name = "sample.csv"
 		}),
 		widget.NewButton("Quit", func() {
 			app.Quit()

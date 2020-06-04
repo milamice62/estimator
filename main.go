@@ -4,7 +4,7 @@ import (
 	"github.com/milamice62/estimator/apps"
 )
 
-func main(){
+func main() {
 	w := apps.NewGUI()
 	w.ShowAndRun()
 }
