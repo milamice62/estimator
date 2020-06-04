@@ -1,18 +1,20 @@
 package apps
 
 import (
-	"fmt"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
-	"github.com/milamice62/estimator/calculator"
-	"github.com/milamice62/estimator/handler"
 )
 
 type File struct {
 	Name string
+}
+
+type Entry struct {
+	UnitPrice *widget.Entry
+	Square    *widget.Entry
+	Item      *widget.Entry
 }
 
 func NewGUI() fyne.Window {
@@ -25,58 +27,53 @@ func NewGUI() fyne.Window {
 	w := app.NewWindow("Demo")
 
 	//Form fields
-	unitPrice := widget.NewEntry()
-	square := widget.NewEntry()
-	name := widget.NewEntry()
+	UnitPrice := widget.NewEntry()
+	Square := widget.NewEntry()
+	Item := widget.NewEntry()
+	entry := &Entry{UnitPrice, Square, Item}
 
 	grid := fyne.NewContainerWithLayout(layout.NewGridLayout(2))
-	group1 := widget.NewGroup("ProductsInfo")
-	group2 := widget.NewGroup("Results")
+	group1 := widget.NewGroupWithScroller("ProductsInfo")
+	group2 := widget.NewGroupWithScroller("Results")
 	grid.AddObject(group1)
 	grid.AddObject(group2)
 
-	canvasObjets := []fyne.CanvasObject{
+	productsInfo := []fyne.CanvasObject{
 		widget.NewForm(
-			widget.NewFormItem("Name: ", name),
-			widget.NewFormItem("Price/sq.ft: ", unitPrice),
-			widget.NewFormItem("Square(mm): ", square),
+			widget.NewFormItem("Item: ", Item),
+			widget.NewFormItem("Price/sq.ft: ", UnitPrice),
+			widget.NewFormItem("Square(mm): ", Square),
 		),
 		widget.NewButton("Calculate", func() {
-			square, price := calculator.CalculatePrice(unitPrice.Text, square.Text)
-			handler.SaveToFile(currentFile.Name, name.Text, square, price)
-			group2.Append(
-				widget.NewForm(
-					widget.NewFormItem(
-						"Name",
-						widget.NewLabel(fmt.Sprintf("%v", name.Text)),
-					),
-					widget.NewFormItem(
-						"SqureFeet",
-						widget.NewLabel(fmt.Sprintf("%.2f", square)),
-					),
-					widget.NewFormItem(
-						"TotalPrice",
-						widget.NewLabel(fmt.Sprintf("%.2f", price)),
-					),
-				),
-			)
+			calculateAndSave(entry, currentFile, group2)
 		}),
-		widget.NewButton("CreateNewFile", func() {
-			handler.CreateNewFile()
-		}),
+		widget.NewButton("CreateNewFile", createNewFile()),
 		widget.NewButton("SelectFile", func() {
-			currentFile.Name = "sample.csv"
+			selectFile(currentFile)
+			// currentFile.Name = "sample.csv"
 		}),
 		widget.NewButton("Quit", func() {
 			app.Quit()
 		}),
 	}
 
-	for _, co := range canvasObjets {
-		group1.Append(co)
+	result := []fyne.CanvasObject{
+		fyne.NewContainerWithLayout(
+			layout.NewGridLayout(3),
+			widget.NewLabelWithStyle("Item", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			widget.NewLabelWithStyle("Square(ft)", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			widget.NewLabelWithStyle("Price", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		),
+	}
+
+	for _, pi := range productsInfo {
+		group1.Append(pi)
+	}
+
+	for _, r := range result {
+		group2.Append(r)
 	}
 
 	w.SetContent(grid)
-
 	return w
 }
