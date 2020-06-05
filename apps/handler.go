@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
@@ -14,26 +13,42 @@ import (
 	"github.com/sqweek/dialog"
 )
 
-func createNewFile() func() {
+func calculateAndSave(entry *Entry, file *File, group *widget.Group) func() {
 	return func() {
-		_, err := os.Create("File-" + time.Now().String() + ".csv")
-		if err != nil {
-			log.Printf("Could not create file: %v", err)
+		if file.Name == "" {
+			dialog.Message("Please select file!").Title("No File Selected").Info()
+			return
 		}
+
+		sq, pr := calculator.CalculatePrice(entry.UnitPrice.Text, entry.Square.Text)
+		saveToFile(file.Name, entry.Item.Text, sq, pr)
+		group.Append(
+			fyne.NewContainerWithLayout(
+				layout.NewGridLayout(3),
+				widget.NewLabelWithStyle(fmt.Sprintf("%v", entry.Item.Text), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+				widget.NewLabelWithStyle(fmt.Sprintf("%.2f", sq), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+				widget.NewLabelWithStyle(fmt.Sprintf("%.2f", pr), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+			),
+		)
 	}
 }
 
-func calculateAndSave(entry *Entry, file *File, group *widget.Group) {
-	sq, pr := calculator.CalculatePrice(entry.UnitPrice.Text, entry.Square.Text)
-	saveToFile(file.Name, entry.Item.Text, sq, pr)
-	group.Append(
-		fyne.NewContainerWithLayout(
-			layout.NewGridLayout(3),
-			widget.NewLabelWithStyle(fmt.Sprintf("%v", entry.Item.Text), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-			widget.NewLabelWithStyle(fmt.Sprintf("%.2f", sq), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-			widget.NewLabelWithStyle(fmt.Sprintf("%.2f", pr), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-		),
-	)
+func createNewFile(file *File) func() {
+	return func() {
+		path, err := dialog.File().Save()
+		if err != nil {
+			log.Printf("Invalid file path: %v", err)
+			return
+		}
+
+		_, err = os.Create(path)
+		if err != nil {
+			log.Printf("Could not create file: %v", err)
+			return
+		}
+
+		file.Name = path
+	}
 }
 
 func saveToFile(file string, name string, square float64, price float64) {
@@ -49,13 +64,13 @@ func saveToFile(file string, name string, square float64, price float64) {
 	cw.Flush()
 }
 
-func selectFile(currentFile *File) {
-	fb := dialog.File()
-	path, err := fb.Load()
-	if err != nil {
-		mb := dialog.Message("file")
-		mb.Title("Could not open file").Error()
-		return
+func selectFile(currentFile *File) func() {
+	return func() {
+		path, err := dialog.File().Load()
+		if err != nil {
+			dialog.Message("Could not select the file!").Title("File not found").Error()
+			return
+		}
+		currentFile.Name = path
 	}
-	currentFile.Name = path
 }
